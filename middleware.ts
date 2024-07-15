@@ -1,11 +1,37 @@
-import { auth } from "./auth";
+import authConfig from "./auth.config"
+import NextAuth from "next-auth"
+import {apiAuthPrefix, authRoutes, DEFAULT_LOGIN_REDIRECT, publicRoutes} from "@/routes";
 
-export default auth((req) => {
-  const isLoggedIn = !!req.auth;
-  console.log(req.nextUrl.pathname);
-  console.log("isLoggedIn:", isLoggedIn);
+
+const {auth} = NextAuth(authConfig)
+
+export default auth((req: any): any => {
+    const {nextUrl} = req;
+    const isLoggedIn = !!req.auth;
+
+    const isAPiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
+    const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
+    const isAuthRoute = authRoutes.includes(nextUrl.pathname);
+
+    if (isAPiAuthRoute) {
+        return null;
+    }
+
+    if (isAuthRoute) {
+        if (isLoggedIn) {
+            return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
+        }
+        return null;
+    }
+
+    if (!isLoggedIn && !isAPiAuthRoute) {
+        return Response.redirect(new URL("/auth/login", nextUrl));
+    }
+
+    return null;
+
 });
 
 export const config = {
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+    matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
 };
