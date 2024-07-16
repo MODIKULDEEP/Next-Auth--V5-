@@ -1,14 +1,21 @@
-import {Resend} from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import nodemailer from 'nodemailer';
 
 export const sendVerificationEmail = async (email: string, token: string) => {
     const confirmLink = `http://localhost:3000/auth/new-verification?token=${token}`;
+    const transporter = nodemailer.createTransport({
+        service: process.env.MAIL_HOST,
+        auth: {
+            user: process.env.MAIL_USERNAME,
+            pass: process.env.MAIL_PASSWORD
+        }
+    });
 
-    await resend.emails.send({
-        from: "onboarding@resend.dev",
+    const mailOptions = {
+        from: process.env.MAIL_USERNAME,
         to: email,
         subject: "Confirm your email",
-        html: `<p>Click <a href="${confirmLink}">here</a> to confirm email.</p>`,
-    })
+        html: `<p>Click <a href="${confirmLink}">here</a> to confirm email.</p>`
+    };
+
+    await transporter.sendMail(mailOptions);
 }
