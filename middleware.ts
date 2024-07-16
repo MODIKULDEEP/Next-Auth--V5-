@@ -24,7 +24,7 @@ export default auth((req: any): any => {
         return null;
     }
 
-    if (!isLoggedIn && !isAPiAuthRoute) {
+    if (!isLoggedIn && !isPublicRoute) {
         return Response.redirect(new URL("/auth/login", nextUrl));
     }
 
