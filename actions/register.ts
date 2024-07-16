@@ -1,36 +1,39 @@
 "use server";
 import * as z from "zod";
 import bcrypt from "bcryptjs";
-import { RegisterSchema } from "@/schemas";
-import { db } from "@/lib/db";
-import { getUserByEmail } from "@/data/user";
+import {RegisterSchema} from "@/schemas";
+import {db} from "@/lib/db";
+import {getUserByEmail} from "@/data/user";
+import {generateVerificationToken} from "@/lib/tokens";
+import {sendVerificationEmail} from "@/lib/mail";
 
 export const register = async (values: z.infer<typeof RegisterSchema>) => {
-  const validateFiels = RegisterSchema.safeParse(values);
+    const validateFields = RegisterSchema.safeParse(values);
 
-  if (!validateFiels.success) {
-    return { error: "Invalid fields" };
-  }
+    if (!validateFields.success) {
+        return {error: "Invalid fields"};
+    }
 
-  const { email, password, name } = validateFiels.data;
+    const {email, password, name} = validateFields.data;
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  const exsitingUser = await getUserByEmail(email);
+    const existingUser = await getUserByEmail(email);
 
-  if (exsitingUser) {
-    return { error: "Email already in use!" };
-  }
+    if (existingUser) {
+        return {error: "Email already in use!"};
+    }
 
-  await db.user.create({
-    data: {
-      name,
-      email,
-      password: hashedPassword,
-    },
-  });
+    await db.user.create({
+        data: {
+            name,
+            email,
+            password: hashedPassword,
+        },
+    });
 
-  // TODO: Send Verification Email Logic
+    const verificationToken = await generateVerificationToken(email);
+    await sendVerificationEmail(verificationToken.email, verificationToken.token);
 
-  return { success: "User Created" };
+    return {success: "Confirmation email sent!"};
 };
