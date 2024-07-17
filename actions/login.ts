@@ -5,40 +5,84 @@ import {signIn} from "@/auth";
 import {DEFAULT_LOGIN_REDIRECT} from "@/routes";
 import {AuthError} from "next-auth";
 import {getUserByEmail} from "@/data/user";
-import {generateVerificationToken} from "@/lib/tokens";
-import {sendVerificationEmail} from "@/lib/mail";
+import {generateTwoFactorToken, generateVerificationToken} from "@/lib/tokens";
+import {sendTwoFactorTokenEmail, sendVerificationEmail} from "@/lib/mail";
+import {getTwofactorTokenByEmail} from "@/data/two-factor-token";
+import {db} from "@/lib/db";
+import {getTwoFactorConfirmationByUserId} from "@/data/two-factor-confirmation";
 
 export const login = async (values: z.infer<typeof LoginSchema>) => {
-    const validateFields = LoginSchema.safeParse(values);
-    if (!validateFields.success) return {error: "Invalid fields"};
-    const {email, password} = validateFields.data;
+        const validateFields = LoginSchema.safeParse(values);
+        if (!validateFields.success) return {error: "Invalid fields"};
+        const {email, password, code} = validateFields.data;
 
-    const existingUser = await getUserByEmail(email);
-    if (!existingUser || !existingUser.password || !existingUser.email) {
-        return {error: "Email does not exist!"};
-    }
+        const existingUser = await getUserByEmail(email);
+        if (!existingUser || !existingUser.password || !existingUser.email) {
+            return {error: "Email does not exist!"};
+        }
 
-    if (!existingUser.emailVerified) {
-        const verificationToken = await generateVerificationToken(existingUser.email)
-        await sendVerificationEmail(verificationToken.email, verificationToken.token);
-        return {success: "Confirmation email sent!"}
-    }
+        if (!existingUser.emailVerified) {
+            const verificationToken = await generateVerificationToken(existingUser.email)
+            await sendVerificationEmail(verificationToken.email, verificationToken.token);
+            return {success: "Confirmation email sent!"}
+        }
 
-    try {
-        await signIn("credentials", {email, password, redirectTo: DEFAULT_LOGIN_REDIRECT});
-    } catch (error) {
-        if (error instanceof AuthError) {
-            switch (error.type) {
-                case "CredentialsSignin":
-                    return {error: "Invalid credentials"};
-                case "CallbackRouteError":
-                    return {error: "Invalid credentials"};
-                case "AccessDenied":
-                    return {error: "please verify your email"};
-                default:
-                    return {error: "Something went wrong"};
+        if (existingUser.isTwoFactorEnabled && existingUser.email) {
+            if (code) {
+                const twoFactorToken = await getTwofactorTokenByEmail(existingUser.email)
+                if (!twoFactorToken || twoFactorToken.token !== code) {
+                    return {error: "Invalid code!"}
+                }
+
+                const hasExpired = new Date(existingUser.expiry) <= new Date()
+                if (hasExpired) {
+                    return {error: "Code expired!"}
+                }
+
+                await db.twoFactorToken.delete({
+                    where: {
+                        id: twoFactorToken.id,
+                    }
+                })
+
+                const existingConfirmation = await getTwoFactorConfirmationByUserId(existingUser.id)
+                if (existingConfirmation) {
+                    await db.twoFactorConfirmation.delete({
+                        where: {
+                            id: existingConfirmation.id,
+                        }
+                    })
+                }
+
+                await db.twoFactorConfirmation.create({
+                    data: {
+                        userId: existingUser.id,
+                    }
+                })
+            } else {
+                const twoFactorToken = await generateTwoFactorToken(existingUser.email)
+                await sendTwoFactorTokenEmail(twoFactorToken.email, twoFactorToken.token)
+
+                return {twoFactor: true}
             }
         }
-        throw error;
+
+        try {
+            await signIn("credentials", {email, password, redirectTo: DEFAULT_LOGIN_REDIRECT});
+        } catch (error) {
+            if (error instanceof AuthError) {
+                switch (error.type) {
+                    case "CredentialsSignin":
+                        return {error: "Invalid credentials"};
+                    case "CallbackRouteError":
+                        return {error: "Invalid credentials"};
+                    case "AccessDenied":
+                        return {error: "please verify your email"};
+                    default:
+                        return {error: "Something went wrong"};
+                }
+            }
+            throw error;
+        }
     }
-};
+;

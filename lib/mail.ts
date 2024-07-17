@@ -35,3 +35,15 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
 
     await transporter.sendMail(mailOptions);
 }
+
+export const sendTwoFactorTokenEmail = async (email: string, token: string) => {
+
+    const mailOptions = {
+        from: mailUser,
+        to: email,
+        subject: "2FA Code",
+        html: `<p>Your 2FA code: ${token}</p>`
+    };
+
+    await transporter.sendMail(mailOptions);
+}
