@@ -5,6 +5,7 @@ import {getPasswordResetTokenByToken} from "@/data/password-reset-token";
 import {getUserByEmail} from "@/data/user";
 import bcrypt from "bcryptjs";
 import {db} from "@/lib/db";
+import * as z from "zod";
 
 export const newPassword = async (values: z.infer<typeof NewPasswordSchema>, token: string | null) => {
     if (!token) {
@@ -22,7 +23,7 @@ export const newPassword = async (values: z.infer<typeof NewPasswordSchema>, tok
     if (!existingToken) {
         return {error: "Invalid token!"}
     }
-    const hasExpired = new Date(existingToken.expiry) <= new Date()
+    const hasExpired = new Date(existingToken.expires) <= new Date()
     if (hasExpired) {
         return {error: "Token has expired!"}
     }

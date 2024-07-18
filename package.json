@@ -7,9 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "generate": "npx prisma generate",
-    "push": "npx prisma db push",
-    "studio": "npx prisma studio"
+    "generate": "prisma generate",
+    "push": "prisma db push",
+    "studio": "prisma studio"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.4.1",

@@ -34,7 +34,7 @@ export const login = async (values: z.infer<typeof LoginSchema>, callbackUrl?: s
                     return {error: "Invalid code!"}
                 }
 
-                const hasExpired = new Date(existingUser.expiry) <= new Date()
+                const hasExpired = new Date(twoFactorToken.expires) <= new Date()
                 if (hasExpired) {
                     return {error: "Code expired!"}
                 }
