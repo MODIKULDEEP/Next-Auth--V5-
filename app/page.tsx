@@ -22,7 +22,7 @@ export default function Home() {
         </h1>
         <p className="text-white text-lg">Next.js Authentication App</p>
         <div>
-          <LoginButton>
+          <LoginButton mode="redirect" asChild>
             <Button variant="secondary" size="lg">
               Sign In
             </Button>

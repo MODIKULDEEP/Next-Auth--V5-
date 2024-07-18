@@ -1,3 +1,4 @@
+"use server"
 import {currentUser} from "@/lib/auth";
 import {UserInfo} from "@/components/user-info";
 

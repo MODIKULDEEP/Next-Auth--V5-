@@ -9,9 +9,10 @@ const transporter = nodemailer.createTransport({
 });
 
 const mailUser = process.env.MAIL_USERNAME;
+const domain = process.env.NEXT_PUBLIC_SERVICE_URL;
 
 export const sendVerificationEmail = async (email: string, token: string) => {
-    const confirmLink = `http://localhost:3000/auth/new-verification?token=${token}`;
+    const confirmLink = `${domain}/auth/new-verification?token=${token}`;
 
     const mailOptions = {
         from: mailUser,
@@ -24,7 +25,7 @@ export const sendVerificationEmail = async (email: string, token: string) => {
 }
 
 export const sendPasswordResetEmail = async (email: string, token: string) => {
-    const confirmLink = `http://localhost:3000/auth/new-password?token=${token}`;
+    const confirmLink = `${domain}/auth/new-password?token=${token}`;
 
     const mailOptions = {
         from: mailUser,
