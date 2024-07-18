@@ -5,6 +5,7 @@ import {Toaster} from "sonner";
 import {SessionProvider} from "next-auth/react";
 import {auth} from '@/auth'
 import {SpeedInsights} from '@vercel/speed-insights/next';
+import {Analytics} from "@vercel/analytics/react"
 
 const inter = Inter({subsets: ["latin"]});
 
@@ -27,6 +28,7 @@ export default async function RootLayout({
             <Toaster/>
             {children}
             <SpeedInsights/>
+            <Analytics/>
             </body>
             </html>
         </SessionProvider>
